@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Albums</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+    </style>
+    <script th:inline="javascript">
+        function sortTable(n) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById("albumsTable");
+            switching = true;
+            dir = "asc";
+
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+
+                    // Convert to lowercase for case-insensitive sorting
+                    var xValue = x.innerHTML.toLowerCase();
+                    var yValue = y.innerHTML.toLowerCase();
+
+                    // Custom function to parse 'dd.MM.yyyy' date format
+                    function parseDate(dateString) {
+                        var parts = dateString.split('.');
+                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                    }
+
+                    // Convert Release date column values to Date objects
+                    if (n === 1) {
+                        xValue = parseDate(xValue);
+                        yValue = parseDate(yValue);
+                    } else if (n === 3) {  // Sales column
+                        xValue = parseFloat(xValue.replace(/,/g, ''));  // Remove commas from sales values
+                        yValue = parseFloat(yValue.replace(/,/g, ''));
+                    }
+
+                    if (dir === "asc") {
+                        if (xValue > yValue) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir === "desc") {
+                        if (xValue < yValue) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    if (switchcount === 0 && dir === "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+        }
+
+    </script>
+</head>
+<body>
+<p>Яцко Егор Юрьевич, 4 курс, 4 группа, 2023 год</p>
+<p>
+    <a href="http://localhost:8080/index">Reference book list</a>
+</p>
+<p>
+    <a href="http://localhost:8080/album/update">Update table</a>
+</p>
+<table id="albumsTable">
+    <tr>
+        <td><a href="#" onclick="sortTable(0)">Title</a></td>
+        <td><a href="#" onclick="sortTable(1)">Release date</a></td>
+        <td><a href="#" onclick="sortTable(2)">Number of tracks</a></td>
+        <td><a href="#" onclick="sortTable(3)">Sales</a></td>
+    </tr>
+    <tr th:each="album : ${albums}">
+        <td th:text="${album.title}"></td>
+        <td th:text="${#dates.format(album.releaseDate, 'dd.MM.yyyy')}"></td>
+        <td th:text="${album.numberOfTracks}"></td>
+        <td th:text="${album.sales}"></td>
+    </tr>
+</table>
+</body>
+</html>

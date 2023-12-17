@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Update albums</title>
+
+    <!-- Подключение jQuery и jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <script>
+        // Инициализация Datepicker
+        $(function () {
+            $(".datepicker").datepicker({
+                dateFormat: 'dd.mm.yy',
+                showButtonPanel: true
+            });
+
+            $("#saveButton").click(function () {
+                var formData = {
+                    albums: []
+                };
+
+                $("tbody tr").each(function () {
+                    var id = $(this).data("album-id");
+
+                    var title = $(this).find("textarea").val();
+                    var releaseDate = $(this).find(".datepicker").val();
+                    var numberOfTracks = $(this).find(".numeric").val();
+                    var sales = $(this).find(".sales").val();
+
+                    // Validate the date format
+                    if (releaseDate && !isValidDate(releaseDate)) {
+                        alert("Invalid date format or an impossible date. Please use dd.MM.yyyy.");
+                        return;
+                    }
+
+                    // Check if the row has any non-empty fields before adding it to formData
+                    if (title || releaseDate || numberOfTracks || sales) {
+                        var album = {
+                            albumId: id,
+                            title: title,
+                            releaseDate: releaseDate,
+                            numberOfTracks: numberOfTracks,
+                            sales: sales
+                        };
+                        formData.albums.push(album);
+                    }
+                });
+
+                $.ajax({
+                    type: "POST",
+                    contentType: "application/json",
+                    url: "/album/update",
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        console.log(response);
+                        window.location.href = "/album";
+                    },
+                    error: function (error) {
+                        console.error(error);
+                    }
+                });
+            });
+
+            $("#addRowButton").click(function () {
+                var newRowHtml = '<tr data-album-id=""><td><textarea></textarea></td><td><input type="text" class="datepicker" /></td><td><input type="text" class="numeric" /></td><td><input type="text" class="sales" /></td><td></td></tr>';
+                $("tbody").append(newRowHtml);
+
+                // Initialize Datepicker for the new row
+                $(".datepicker").datepicker({
+                    dateFormat: 'dd.mm.yy',
+                    showButtonPanel: true
+                });
+
+                // Validate date on input change
+                $(".datepicker").on('change', function () {
+                    var releaseDate = $(this).val();
+
+                    // Validate the date format
+                    if (releaseDate && !isValidDate(releaseDate)) {
+                        alert("Invalid date format or an impossible date. Please use dd.MM.yyyy.");
+                        $(this).val(''); // Clear the input field if the date is invalid
+                    }
+                });
+            });
+
+            // Handle delete button click
+            $(document).on('click', '.deleteRowButton', function () {
+                var row = $(this).closest('tr');
+                var albumId = row.data("album-id");
+
+                // Send POST request to a specified URL for deletion
+                $.ajax({
+                    type: "DELETE",
+                    url: "/album/delete/" + albumId,  // Replace with your delete endpoint
+                    success: function (response) {
+                        console.log(response);
+                        row.remove(); // Remove the row after successful deletion
+                    },
+                    error: function (error) {
+                        console.error(error);
+                    }
+                });
+            });
+
+            // Validate if the entered date is valid
+            function isValidDate(dateString) {
+                var regex = /^(\d{2}\.\d{2}.\d{4})$/;
+                if (!dateString.match(regex)) {
+                    return false;
+                }
+
+                var date = $.datepicker.parseDate('dd.mm.yy', dateString);
+
+                // Check if the parsed date is a valid date
+                return date instanceof Date && !isNaN(date.getTime());
+            }
+
+        });
+    </script>
+</head>
+<body>
+<p>Яцко Егор Юрьевич, 4 курс, 4 группа, 2023 год</p>
+
+<table>
+    <thead>
+    <tr>
+        <th>Title</th>
+        <th>Release Date</th>
+        <th>Number of Tracks</th>
+        <th>Sales</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="album : ${albums}" th:attr="data-album-id=${album.albumId}">
+        <td><textarea th:text="${album.title}"></textarea></td>
+        <td>
+            <!-- Добавленный класс "datepicker" для поля с датой -->
+            <input type="text" class="datepicker" th:value="${#dates.format(album.releaseDate, 'dd.MM.yyyy')}" />
+        </td>
+        <td><input type="text" class="numeric" th:value="${album.numberOfTracks}" /></td>
+        <td><input type="text" class="sales" th:value="${album.sales}" /></td>
+        <td><button class="deleteRowButton">Delete</button></td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Добавленная кнопка Save -->
+<button id="saveButton">Save</button>
+
+<!-- Добавленная кнопка Add Row -->
+<button id="addRowButton">Add Row</button>
+</body>
+</html>

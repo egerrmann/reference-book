@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Update bands</title>
+
+    <!-- Подключение jQuery и jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <script>
+        // Initialize Datepicker
+        $(function () {
+            $(".datepicker").datepicker({
+                dateFormat: 'dd.mm.yy',
+                showButtonPanel: true
+            });
+
+            $("#saveButton").click(function () {
+                var formData = {
+                    bands: []
+                };
+
+                $("tbody tr").each(function () {
+                    var id = $(this).data("band-id");
+
+                    var name = $(this).find("textarea").val();
+                    var formationDate = $(this).find(".datepicker").val();
+                    var numberOfMembers = $(this).find(".numeric").val();
+                    var mostPopularAlbumId = $(this).find(".mostPopularAlbum").val();
+
+                    // Validate the date format and values
+                    if (formationDate && !isValidDate(formationDate)) {
+                        alert("Invalid date format or an impossible date. Please use dd.mm.yyyy.");
+                        return;
+                    }
+
+                    // Check if the row has any non-empty fields before adding it to formData
+                    if (name || formationDate || numberOfMembers || mostPopularAlbumId) {
+                        var band = {
+                            bandId: id,
+                            name: name,
+                            formationDate: formationDate,
+                            numberOfMembers: numberOfMembers,
+                            mostPopularAlbumId: mostPopularAlbumId
+                        };
+                        formData.bands.push(band);
+                    }
+                });
+
+                $.ajax({
+                    type: "POST",
+                    contentType: "application/json",
+                    url: "/band/update",
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        console.log(response);
+                        window.location.href = "/band";
+                    },
+                    error: function (error) {
+                        console.error(error);
+                    }
+                });
+            });
+
+
+            $("#addRowButton").click(function () {
+                // Fetch the list of all albums
+                $.ajax({
+                    type: "GET",
+                    url: "/album/entities",
+                    success: function (response) {
+                        var albums = response.albums;
+
+                        // Build the HTML for the dropdown options
+                        var dropdownOptions = '<option value="">Select Album</option>';
+                        albums.forEach(function (album) {
+                            dropdownOptions += '<option value="' + album.albumId + '">' + album.title + '</option>';
+                        });
+
+                        // Add a new row with the updated dropdown options
+                        var newRowHtml =
+                            '<tr data-band-id="">' +
+                            '<td><textarea></textarea></td>' +
+                            '<td><input type="text" class="datepicker" /></td>' +
+                            '<td><input type="text" class="numeric" /></td>' +
+                            '<td>' +
+                            '<select class="mostPopularAlbum">' +
+                            dropdownOptions +
+                            '</select>' +
+                            '</td>' +
+                            '</tr>';
+                        $("tbody").append(newRowHtml);
+                        $(".datepicker").datepicker({
+                            dateFormat: 'dd.mm.yy',
+                            showButtonPanel: true
+                        });
+                    },
+                    error: function (error) {
+                        console.error(error);
+                    }
+                });
+            });
+
+            // Handle delete button click
+            $(document).on('click', '.deleteRowButton', function () {
+                var row = $(this).closest('tr');
+                var bandId = row.data("band-id");
+
+                // Send POST request to a specified URL for deletion
+                $.ajax({
+                    type: "DELETE",
+                    url: "/band/delete/" + bandId,
+                    success: function (response) {
+                        console.log(response);
+                        row.remove(); // Remove the row after successful deletion
+                    },
+                    error: function (error) {
+                        console.error(error);
+                    }
+                });
+            });
+
+            // Validate if the entered date is valid
+            function isValidDate(dateString) {
+                var regex = /^(\d{2}\.\d{2}.\d{4})$/;
+                if (!dateString.match(regex)) {
+                    return false;
+                }
+
+                var parts = dateString.split('.');
+                var day = parseInt(parts[0], 10);
+                var month = parseInt(parts[1], 10);
+                var year = parseInt(parts[2], 10);
+
+                // Check if the parsed date is a valid date
+                return (
+                    year > 1000 && year < 3000 &&
+                    month >= 1 && month <= 12 &&
+                    day >= 1 && day <= new Date(year, month, 0).getDate()
+                );
+            }
+
+        });
+
+    </script>
+</head>
+<body>
+<p>Яцко Егор Юрьевич, 4 курс, 4 группа, 2023 год</p>
+
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Formation Date</th>
+        <th>Number of Members</th>
+        <th>Most popular album</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="band : ${bands}" th:attr="data-band-id=${band.bandId}">
+        <td><textarea th:text="${band.name}"></textarea></td>
+        <td>
+            <input type="text" class="datepicker" th:value="${#dates.format(band.formationDate, 'dd.MM.yyyy')}" />
+        </td>
+        <td><input type="text" class="numeric" th:value="${band.numberOfMembers}" /></td>
+        <td>
+            <!-- Dropdown for Most Popular Album -->
+            <select class="mostPopularAlbum">
+                <option value="" th:unless="${band.mostPopularAlbum != null}">Select Album</option>
+                <option th:each="album : ${albums}" th:value="${album.albumId}" th:data-album-id="${album.albumId}"
+                        th:text="${album.title}" th:selected="${album.albumId == band.mostPopularAlbum.albumId}"></option>
+            </select>
+        </td>
+        <td><button class="deleteRowButton">Delete</button></td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Добавленная кнопка Save -->
+<button id="saveButton">Save</button>
+
+<!-- Добавленная кнопка Add Row -->
+<button id="addRowButton">Add Row</button>
+</body>
+</html>

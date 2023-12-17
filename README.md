@@ -50,5 +50,12 @@
     ("Audioslave", STR_TO_DATE('01-01-2001', '%d-%m-%Y'), 4, 3),
     ("Linkin Park", STR_TO_DATE('01-01-1996', '%d-%m-%Y'), 9, 2);
     ```
+   
+## Step 3
 
+Tech stack: Java, Spring Boot, Spring Data JPA, HTML+JS, JQuery, MySQL
+
+Additionally, I created a Docker container, and it worked properly, 
+but I decided to demonstrate the whole application personally, 
+as this is way easier than explaining how to run the Docker container :)
 

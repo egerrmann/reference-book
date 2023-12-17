@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bands</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+    </style>
+    <script th:inline="javascript">
+        function sortTable(n) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById("bandsTable");
+            switching = true;
+            dir = "asc";
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                    if (dir === "asc") {
+                        if (compareColumnValues(columnValue(x), columnValue(y)) > 0) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir === "desc") {
+                        if (compareColumnValues(columnValue(x), columnValue(y)) < 0) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    if (switchcount === 0 && dir === "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+        }
+
+        function columnValue(element) {
+            var value = element.innerHTML.toLowerCase();
+            if (element.cellIndex === 1) {
+                // Parse 'dd.MM.yyyy' formatted date to be sortable
+                var parts = value.split('.');
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return value;
+        }
+
+        function compareColumnValues(a, b) {
+            if (a > b) {
+                return 1;
+            } else if (a < b) {
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+
+    </script>
+</head>
+<body>
+<p>Яцко Егор Юрьевич, 4 курс, 4 группа, 2023 год</p>
+<p>
+    <a href="http://localhost:8080/index">Reference book list</a>
+</p>
+<p>
+    <a href="http://localhost:8080/band/update">Update table</a>
+</p>
+<table id="bandsTable">
+    <tr>
+        <td><a href="#" onclick="sortTable(0)">Name</a></td>
+        <td><a href="#" onclick="sortTable(1)">Formation date</a></td>
+        <td><a href="#" onclick="sortTable(2)">Number of members</a></td>
+        <td><a href="#" onclick="sortTable(3)">Most popular album</a></td>
+    </tr>
+    <tr th:each="band : ${bands}">
+        <td th:text="${band.name}"></td>
+        <td th:text="${#dates.format(band.formationDate, 'dd.MM.yyyy')}"></td>
+        <td th:text="${band.numberOfMembers}"></td>
+        <td th:text="${band.mostPopularAlbum.title}"></td>
+    </tr>
+</table>
+</body>
+</html>
